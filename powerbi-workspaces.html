@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Power BI Workspaces</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-graph-client/3.0.7/graph-js-sdk.js"></script>
-<script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
 <style>
   :root {
     --bg: #f5f5f0;
@@ -18,7 +16,6 @@
     --accent-border: #85b7eb;
     --hover-bg: #f0f7ff;
     --radius: 10px;
-    --shadow: 0 1px 4px rgba(0,0,0,0.08);
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -42,15 +39,33 @@
     padding: 2rem 1.5rem;
   }
   header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 2rem;
+    display: flex; align-items: center; gap: 14px; margin-bottom: 2rem;
   }
-  header svg { flex-shrink: 0; }
   header h1 { font-size: 1.4rem; font-weight: 600; }
   header p { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
-  .actions { margin-bottom: 1.5rem; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  #error-box {
+    background: #fcebeb; border: 0.5px solid #f09595; color: #791f1f;
+    border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.85rem;
+    margin-bottom: 1rem; display: none;
+  }
+  @media (prefers-color-scheme: dark) {
+    #error-box { background: #501313; border-color: #a32d2d; color: #f7c1c1; }
+  }
+  #login-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 1.5rem;
+    max-width: 360px; display: flex; flex-direction: column; gap: 14px;
+  }
+  #login-card h2 { font-size: 1rem; font-weight: 500; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 0.8rem; color: var(--text-muted); }
+  .field input {
+    width: 100%; padding: 8px 10px;
+    border: 0.5px solid var(--border); border-radius: 7px;
+    background: var(--bg); color: var(--text); font-size: 0.875rem; outline: none;
+  }
+  .field input:focus { border-color: var(--accent-border); }
+  .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
   button {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 8px 16px; border-radius: 7px; border: 1px solid var(--border);
@@ -58,15 +73,10 @@
     font-size: 0.875rem; font-weight: 500; transition: background 0.15s;
   }
   button:hover { background: var(--hover-bg); }
-  button.primary {
-    background: #185fa5; color: #fff; border-color: #185fa5;
-  }
+  button.primary { background: #185fa5; color: #fff; border-color: #185fa5; }
   button.primary:hover { background: #0c447c; border-color: #0c447c; }
   button:disabled { opacity: 0.45; cursor: not-allowed; }
-  #status {
-    font-size: 0.85rem; color: var(--text-muted);
-    display: flex; align-items: center; gap: 6px;
-  }
+  #status { font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
   .spinner {
     width: 14px; height: 14px;
     border: 2px solid var(--border); border-top-color: #185fa5;
@@ -77,34 +87,20 @@
   .search-wrap input {
     width: 100%; padding: 8px 12px 8px 34px;
     border: 1px solid var(--border); border-radius: 7px;
-    background: var(--surface); color: var(--text); font-size: 0.875rem;
-    outline: none;
+    background: var(--surface); color: var(--text); font-size: 0.875rem; outline: none;
   }
   .search-wrap input:focus { border-color: var(--accent-border); }
-  .search-icon {
-    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-    color: var(--text-muted); pointer-events: none;
-  }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
   #count { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 12px;
-  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
   .card {
-    background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem 1.1rem;
-    text-decoration: none;
-    color: inherit;
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 1rem 1.1rem;
+    text-decoration: none; color: inherit;
     transition: background 0.15s, border-color 0.15s;
     display: flex; flex-direction: column; gap: 6px;
   }
-  .card:hover {
-    background: var(--hover-bg);
-    border-color: var(--accent-border);
-  }
+  .card:hover { background: var(--hover-bg); border-color: var(--accent-border); }
   .card-top { display: flex; align-items: flex-start; gap: 10px; }
   .card-icon {
     width: 34px; height: 34px; border-radius: 7px;
@@ -112,33 +108,14 @@
     display: flex; align-items: center; justify-content: center;
   }
   .card-icon svg { width: 18px; height: 18px; }
-  .card-name {
-    font-size: 0.9rem; font-weight: 600; line-height: 1.3;
-    color: var(--text);
-  }
+  .card-name { font-size: 0.9rem; font-weight: 600; line-height: 1.3; color: var(--text); }
   .card-type {
     font-size: 0.75rem; color: var(--text-muted);
     background: var(--bg); border-radius: 5px;
-    padding: 2px 7px; align-self: flex-start;
-    border: 0.5px solid var(--border);
+    padding: 2px 7px; align-self: flex-start; border: 0.5px solid var(--border);
   }
-  .card-id {
-    font-size: 0.7rem; color: var(--text-muted);
-    font-family: monospace; letter-spacing: 0.01em;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .empty {
-    grid-column: 1/-1; text-align: center;
-    padding: 3rem; color: var(--text-muted); font-size: 0.9rem;
-  }
-  #error-box {
-    background: #fcebeb; border: 0.5px solid #f09595; color: #791f1f;
-    border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.85rem;
-    margin-bottom: 1rem; display: none;
-  }
-  @media (prefers-color-scheme: dark) {
-    #error-box { background: #501313; border-color: #a32d2d; color: #f7c1c1; }
-  }
+  .card-id { font-size: 0.7rem; color: var(--text-muted); font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .empty { grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
 </style>
 </head>
 <body>
@@ -158,20 +135,32 @@
 
 <div id="error-box"></div>
 
-<div class="actions">
-  <button class="primary" id="btn-login" onclick="login()">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
-    Inloggen met Microsoft
+<div id="login-card">
+  <h2>Inloggen</h2>
+  <div class="field">
+    <label for="username">Gebruikersnaam</label>
+    <input type="text" id="username" placeholder="gebruiker@thegreenery.com" autocomplete="username">
+  </div>
+  <div class="field">
+    <label for="password">Wachtwoord</label>
+    <input type="password" id="password" autocomplete="current-password">
+  </div>
+  <button class="primary" onclick="login()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+    Inloggen
   </button>
-  <button id="btn-refresh" onclick="loadWorkspaces()" disabled style="display:none">
+</div>
+
+<div class="actions" id="toolbar" style="display:none">
+  <button id="btn-refresh" onclick="loadWorkspaces()">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
     Vernieuwen
   </button>
-  <button id="btn-logout" onclick="logout()" style="display:none">
+  <button onclick="logout()">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
     Uitloggen
   </button>
-  <div class="search-wrap" id="search-wrap" style="display:none">
+  <div class="search-wrap">
     <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <input type="text" id="search" placeholder="Zoek workspace…" oninput="filterCards()">
   </div>
@@ -182,20 +171,11 @@
 <div class="grid" id="grid"></div>
 
 <script>
-const CLIENT_ID = "45659904-2fca-4944-b4ec-919322f77fac";
 const TENANT_ID = "fa935145-e9cf-42e1-89d3-f61646054dcc";
+const CLIENT_ID = "45659904-2fca-4944-b4ec-919322f77fac";
+const TOKEN_URL = `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token`;
 
-const msalConfig = {
-  auth: {
-    clientId: CLIENT_ID,
-    authority: `https://login.microsoftonline.com/${TENANT_ID}`,
-    redirectUri: "https://fvandongen.github.io/pbi-workspaces/powerbi-workspaces.html"
-  },
-  cache: { cacheLocation: "localStorage", storeAuthStateInCookie: false }
-};
-
-const scopes = ["https://analysis.windows.net/powerbi/api/Workspace.Read.All"];
-let msalInstance;
+let accessToken = null;
 let allWorkspaces = [];
 
 function setStatus(msg, loading = false) {
@@ -211,83 +191,64 @@ function showError(msg) {
   el.style.display = msg ? 'block' : 'none';
 }
 
-async function init() {
-  msalInstance = new msal.PublicClientApplication(msalConfig);
-  await msalInstance.initialize();
-
-  try {
-    const resp = await msalInstance.handleRedirectPromise();
-    if (resp) onLoggedIn(resp.account);
-  } catch(e) {}
-
-  const accounts = msalInstance.getAllAccounts();
-  if (accounts.length > 0) onLoggedIn(accounts[0]);
-}
-
-function onLoggedIn(account) {
-  document.getElementById('btn-login').style.display = 'none';
-  document.getElementById('btn-refresh').style.display = 'inline-flex';
-  document.getElementById('btn-refresh').disabled = false;
-  document.getElementById('btn-logout').style.display = 'inline-flex';
-  document.getElementById('search-wrap').style.display = 'flex';
-  setStatus(`Ingelogd als ${account.username}`);
-  loadWorkspaces();
-}
-
 async function login() {
   showError('');
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  if (!username || !password) { showError('Vul gebruikersnaam en wachtwoord in.'); return; }
+
+  setStatus('Inloggen...', true);
+
+  const body = new URLSearchParams({
+    grant_type: 'password',
+    client_id: CLIENT_ID,
+    username,
+    password,
+    scope: 'https://analysis.windows.net/powerbi/api/Workspace.Read.All openid profile'
+  });
+
   try {
-    const resp = await msalInstance.loginPopup({ scopes });
-    onLoggedIn(resp.account);
+    const res = await fetch(TOKEN_URL, { method: 'POST', body });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error_description || data.error);
+    accessToken = data.access_token;
+    document.getElementById('login-card').style.display = 'none';
+    document.getElementById('toolbar').style.display = 'flex';
+    document.getElementById('password').value = '';
+    setStatus('');
+    loadWorkspaces();
   } catch(e) {
-    if (e.errorCode !== 'user_cancelled') showError('Inloggen mislukt: ' + e.message);
+    setStatus('');
+    showError('Inloggen mislukt: ' + e.message);
   }
 }
 
 function logout() {
-  msalInstance.logoutPopup().then(() => {
-    document.getElementById('btn-login').style.display = 'inline-flex';
-    document.getElementById('btn-refresh').style.display = 'none';
-    document.getElementById('btn-logout').style.display = 'none';
-    document.getElementById('search-wrap').style.display = 'none';
-    document.getElementById('grid').innerHTML = '';
-    document.getElementById('count').textContent = '';
-    setStatus('');
-  });
-}
-
-async function getToken() {
-  const accounts = msalInstance.getAllAccounts();
-  const req = { scopes, account: accounts[0] };
-  try {
-    const resp = await msalInstance.acquireTokenSilent(req);
-    return resp.accessToken;
-  } catch {
-    const resp = await msalInstance.acquireTokenPopup(req);
-    return resp.accessToken;
-  }
+  accessToken = null;
+  allWorkspaces = [];
+  document.getElementById('login-card').style.display = 'flex';
+  document.getElementById('toolbar').style.display = 'none';
+  document.getElementById('grid').innerHTML = '';
+  document.getElementById('count').textContent = '';
+  document.getElementById('username').value = '';
+  showError('');
 }
 
 async function loadWorkspaces() {
   showError('');
-  setStatus('Workspaces ophalen…', true);
+  setStatus('Workspaces ophalen...', true);
   document.getElementById('btn-refresh').disabled = true;
 
   try {
-    const token = await getToken();
-    let url = 'https://api.powerbi.com/v1.0/myorg/groups?$top=200&$filter=type eq \'Workspace\'';
+    let url = 'https://api.powerbi.com/v1.0/myorg/groups?$top=200';
     let workspaces = [];
-
     while (url) {
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
       if (!res.ok) throw new Error(`API fout ${res.status}: ${res.statusText}`);
       const data = await res.json();
       workspaces = workspaces.concat(data.value || []);
       url = data['@odata.nextLink'] || null;
     }
-
     allWorkspaces = workspaces.sort((a, b) => a.name.localeCompare(b.name, 'nl'));
     renderCards(allWorkspaces);
     setStatus('');
@@ -295,55 +256,45 @@ async function loadWorkspaces() {
     showError('Laden mislukt: ' + e.message);
     setStatus('');
   }
-
   document.getElementById('btn-refresh').disabled = false;
 }
 
 function renderCards(list) {
   const grid = document.getElementById('grid');
-  const count = document.getElementById('count');
-  count.textContent = `${list.length} workspace${list.length !== 1 ? 's' : ''}`;
-
-  if (list.length === 0) {
-    grid.innerHTML = '<div class="empty">Geen workspaces gevonden.</div>';
-    return;
-  }
-
-  grid.innerHTML = list.map(ws => {
-    const url = `https://app.powerbi.com/groups/${ws.id}`;
-    const typeLabel = ws.type === 'Workspace' ? 'Workspace' : (ws.type || 'Workspace');
-    return `
-      <a class="card" href="${url}" target="_blank" rel="noopener">
-        <div class="card-top">
-          <div class="card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#185fa5" stroke-width="1.8">
-              <rect x="3" y="3" width="7" height="7" rx="1.5"/>
-              <rect x="14" y="3" width="7" height="7" rx="1.5"/>
-              <rect x="3" y="14" width="7" height="7" rx="1.5"/>
-              <rect x="14" y="14" width="7" height="7" rx="1.5"/>
-            </svg>
-          </div>
-          <div>
-            <div class="card-name">${escHtml(ws.name)}</div>
-            <span class="card-type">${typeLabel}</span>
-          </div>
+  document.getElementById('count').textContent = `${list.length} workspace${list.length !== 1 ? 's' : ''}`;
+  if (list.length === 0) { grid.innerHTML = '<div class="empty">Geen workspaces gevonden.</div>'; return; }
+  grid.innerHTML = list.map(ws => `
+    <a class="card" href="https://app.powerbi.com/groups/${ws.id}" target="_blank" rel="noopener">
+      <div class="card-top">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#185fa5" stroke-width="1.8">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+            <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+          </svg>
         </div>
-        <div class="card-id">${ws.id}</div>
-      </a>`;
-  }).join('');
+        <div>
+          <div class="card-name">${escHtml(ws.name)}</div>
+          <span class="card-type">${ws.type || 'Workspace'}</span>
+        </div>
+      </div>
+      <div class="card-id">${ws.id}</div>
+    </a>`).join('');
 }
 
 function filterCards() {
   const q = document.getElementById('search').value.toLowerCase();
-  const filtered = allWorkspaces.filter(ws => ws.name.toLowerCase().includes(q));
-  renderCards(filtered);
+  renderCards(allWorkspaces.filter(ws => ws.name.toLowerCase().includes(q)));
 }
 
 function escHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-init();
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('login-card').style.display !== 'none') login();
+});
 </script>
 </body>
 </html>
